@@ -1,0 +1,326 @@
+{
+  "entities": {
+    "Reward": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Reward",
+      "type": "object",
+      "description": "Represents a reward that can be earned or purchased within the app.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the reward."
+        },
+        "name": {
+          "type": "string",
+          "description": "Name of the reward."
+        },
+        "description": {
+          "type": "string",
+          "description": "Description of the reward and its benefits."
+        },
+        "cost": {
+          "type": "number",
+          "description": "Cost of the reward in points."
+        },
+        "type": {
+          "type": "string",
+          "description": "Type of the reward (e.g., sticker, background theme, feature unlock)."
+        },
+        "imageUrl": {
+          "type": "string",
+          "description": "URL of the image associated with the reward."
+        },
+        "featureId": {
+          "type": "string",
+          "description": "Reference to Feature. (Relationship: Feature 1:1 Reward).  If the reward unlocks a specific feature, this is the ID of that feature. Null if it's a cosmetic reward."
+        }
+      },
+      "required": [
+        "id",
+        "name",
+        "description",
+        "cost",
+        "type"
+      ]
+    },
+    "UserReward": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "UserReward",
+      "type": "object",
+      "description": "Represents a reward owned by a user.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the user reward."
+        },
+        "userId": {
+          "type": "string",
+          "description": "Reference to User. (Relationship: User 1:N UserReward).  Identifier of the user who owns the reward."
+        },
+        "rewardId": {
+          "type": "string",
+          "description": "Reference to Reward. (Relationship: Reward 1:N UserReward). Identifier of the reward."
+        },
+        "acquisitionDate": {
+          "type": "string",
+          "description": "Date and time when the user acquired the reward.",
+          "format": "date-time"
+        },
+        "isUsed": {
+          "type": "boolean",
+          "description": "Indicates whether the reward has been used (e.g., a feature unlock has been applied)."
+        }
+      },
+      "required": [
+        "id",
+        "userId",
+        "rewardId",
+        "acquisitionDate",
+        "isUsed"
+      ]
+    },
+    "User": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "User",
+      "type": "object",
+      "description": "Represents a user of the application.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the user."
+        },
+        "username": {
+          "type": "string",
+          "description": "Username of the user."
+        },
+        "email": {
+          "type": "string",
+          "description": "Email of the user.",
+          "format": "email"
+        },
+        "createdAt": {
+          "type": "string",
+          "description": "Date and time when the user was created.",
+          "format": "date-time"
+        },
+        "topicProgress": {
+          "type": "object",
+          "description": "A map storing the user's progress for each topic.",
+          "additionalProperties": {
+            "type": "object",
+            "properties": {
+              "level": {
+                "type": "number",
+                "description": "The user's current level in this topic."
+              },
+              "points": {
+                "type": "number",
+                "description": "The user's total points in this topic."
+              }
+            },
+            "required": ["level", "points"]
+          }
+        },
+        "medals": {
+          "type": "array",
+          "description": "A list of medal IDs that the user has unlocked.",
+          "items": {
+            "type": "string"
+          }
+        },
+        "previousMedals": {
+          "type": "array",
+          "description": "A backup list of medal IDs for a user before they were granted admin status.",
+          "items": {
+            "type": "string"
+          }
+        },
+        "isAdmin": {
+          "type": "boolean",
+          "description": "Indicates if the user has administrative privileges."
+        }
+      },
+      "required": [
+        "id",
+        "username",
+        "email",
+        "createdAt",
+        "topicProgress"
+      ]
+    },
+    "LeaderboardEntry": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "LeaderboardEntry",
+      "type": "object",
+      "description": "Represents an entry in the leaderboard.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the leaderboard entry."
+        },
+        "userId": {
+          "type": "string",
+          "description": "Reference to User. (Relationship: User 1:1 LeaderboardEntry). Identifier of the user."
+        },
+        "score": {
+          "type": "number",
+          "description": "User's score for leaderboard ranking."
+        },
+        "timestamp": {
+          "type": "string",
+          "description": "Timestamp of when the score was achieved.",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "id",
+        "userId",
+        "score",
+        "timestamp"
+      ]
+    },
+    "Feature": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Feature",
+      "type": "object",
+      "description": "Represents an unlockable feature within the app.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the feature."
+        },
+        "name": {
+          "type": "string",
+          "description": "Name of the feature."
+        },
+        "description": {
+          "type": "string",
+          "description": "Description of the feature."
+        },
+        "isUnlocked": {
+          "type": "boolean",
+          "description": "Indicates whether the feature is unlocked for a specific user."
+        }
+      },
+      "required": [
+        "id",
+        "name",
+        "description"
+      ]
+    }
+  },
+  "auth": {
+    "providers": [
+      "password"
+    ]
+  },
+  "firestore": {
+    "structure": [
+      {
+        "path": "/users/{userId}",
+        "definition": {
+          "entityName": "User",
+          "schema": {
+            "$ref": "#/backend/entities/User"
+          },
+          "description": "Stores user data, including topic-specific progress. Path-based ownership ensures only the authenticated user can access their own document.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The unique identifier for the user."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/rewards/{rewardId}",
+        "definition": {
+          "entityName": "Reward",
+          "schema": {
+            "$ref": "#/backend/entities/Reward"
+          },
+          "description": "Stores reward definitions. Public read access is assumed. Administrative access is required for creation/modification.",
+          "params": [
+            {
+              "name": "rewardId",
+              "description": "The unique identifier for the reward."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/users/{userId}/rewards/{rewardId}",
+        "definition": {
+          "entityName": "UserReward",
+          "schema": {
+            "$ref": "#/backend/entities/UserReward"
+          },
+          "description": "Stores rewards acquired by each user. Subcollection of `/users/{userId}` enables straightforward security rules based on user ownership. `rewardId` references the parent `rewards` collection.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The unique identifier for the user."
+            },
+            {
+              "name": "rewardId",
+              "description": "The unique identifier for the reward."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/leaderboard_entries/{leaderboardEntryId}",
+        "definition": {
+          "entityName": "LeaderboardEntry",
+          "schema": {
+            "$ref": "#/backend/entities/LeaderboardEntry"
+          },
+          "description": "Stores leaderboard entries. Consider write volume. Re-compute periodically. Read-access limited to authorized users to prevent manipulation.",
+          "params": [
+            {
+              "name": "leaderboardEntryId",
+              "description": "The unique identifier for the leaderboard entry."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/features/{featureId}",
+        "definition": {
+          "entityName": "Feature",
+          "schema": {
+            "$ref": "#/backend/entities/Feature"
+          },
+          "description": "Defines the features available in the app. Public read access is assumed. Administrative access is required for creation/modification.",
+          "params": [
+            {
+              "name": "featureId",
+              "description": "The unique identifier for the feature."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/users/{userId}/unlocked_features/{featureId}",
+        "definition": {
+          "entityName": "Feature",
+          "schema": {
+            "$ref": "#/backend/entities/Feature"
+          },
+          "description": "Stores the features unlocked by each user. Subcollection of `/users/{userId}` with the feature document `featureId` referencing to the parent `features` collection, enabling straightforward security rules based on user ownership.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The unique identifier for the user."
+            },
+            {
+              "name": "featureId",
+              "description": "The unique identifier for the feature."
+            }
+          ]
+        }
+      }
+    ],
+    "reasoning": "The Firestore structure is designed to support a topic-specific reward system, user points, feature unlocking, and leaderboard functionality for the SmartyKids app. It prioritizes authorization independence and efficient data retrieval.\n\n*   `/users/{userId}`: This collection stores user data, including a map for topic-specific progress. It uses path-based ownership, meaning only the authenticated user can access their own document. Authorization independence is inherently achieved as each user document contains all the necessary information for user-specific operations.\n*   `/rewards/{rewardId}`: This collection stores reward definitions. Public read access is assumed for displaying available rewards. Administrative access is required for creation/modification.\n*   `/users/{userId}/rewards/{rewardId}`: This subcollection stores rewards acquired by each user. It is a subcollection of `/users/{userId}`, which enables straightforward security rules based on user ownership. The document `rewardId` references the parent `rewards` collection.\n*   `/leaderboard_entries/{leaderboardEntryId}`: This collection stores leaderboard entries. While efficient for queries, consider the write volume on this collection with write-heavy user activity. It's suggested that this is re-computed periodically, and read-access should be limited to authorized users to prevent manipulation.\n*   `/features/{featureId}`: This collection defines the features available in the app. Public read access is assumed for displaying feature details. Administrative access is required for creation/modification.\n*   `/users/{userId}/unlocked_features/{featureId}`: This subcollection stores the features unlocked by each user. This uses a subcollection of `/users/{userId}` with the feature document `featureId` referencing to the parent `features` collection, enabling straightforward security rules based on user ownership.\n\n**Authorization Independence:** The structure achieves authorization independence by avoiding `get()` calls in security rules. User-specific data (topic progress, rewards, unlocked features) are stored either directly within the user document or in subcollections owned by the user. This eliminates the need to fetch parent document data to determine access rights for child documents.\n\n**QAPs (Rules are not Filters):**\n*   Secure `list` operations are supported by segregating data based on ownership and using dedicated collections. For example, listing rewards for a specific user involves querying the `/users/{userId}/rewards` subcollection, which is inherently limited to the authenticated user's rewards.\n*   The membership model is simplified by the one-to-many relationships between users and their associated data (rewards, unlocked features), eliminating the need for explicit membership maps."
+  }
+}

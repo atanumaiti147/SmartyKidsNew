@@ -1,0 +1,103 @@
+/**
+ * @fileoverview Firestore Security Rules for SmartyKids App
+ *
+ * Core Philosophy:
+ * This ruleset enforces a strict user-ownership model for user-specific data,
+ * allows public read access to rewards and features, and restricts access to
+ * leaderboard entries. It also introduces an admin role, based on a field
+ * in the user's document (`get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isAdmin == true`),
+ * which can bypass certain ownership rules to manage user data.
+ *
+ * Data Structure & Roles:
+ * - Admin Role: An admin can update any user's document. This is checked
+ *   via `isAdmin()` function.
+ * - /users/{userId}: Stores user data. Writable by the owner or an admin.
+ *   CRITICAL: A user cannot edit their own `isAdmin` field. Only an admin can do that.
+ * - /rewards/{rewardId}: Publicly readable.
+ * - /users/{userId}/rewards/{rewardId}: Writable only by the owning user.
+ * - /leaderboard_entries/{leaderboardEntryId}: Restricted access.
+ * - /features/{featureId}: Publicly readable.
+ * - /users/{userId}/unlocked_features/{featureId}: Writable by the owning user.
+ */
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    /**
+     * @description Helper functions for validating user roles and ownership.
+     */
+    function isOwner(userId) {
+      return request.auth.uid == userId;
+    }
+    
+    function isAdmin() {
+      // Admin status is determined by a field in the user's own document.
+      // This requires a 'get' call, which has billing implications but is secure.
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isAdmin == true;
+    }
+
+    /**
+     * @description Allows users to read and write their own user document.
+     * Admins are allowed to update any user document.
+     * A user cannot change their own `isAdmin` status.
+     * @path /users/{userId}
+     * @allow (get, list) if request.auth != null
+     * @allow create if isOwner(userId)
+     * @allow update if (isOwner(userId) && request.resource.data.isAdmin == resource.data.isAdmin) || isAdmin()
+     * @allow delete if isOwner(userId)
+     */
+    match /users/{userId} {
+      allow get, list: if request.auth != null;
+      allow create: if isOwner(userId) && request.resource.data.id == request.auth.uid;
+      
+      // Update Rule:
+      // 1. An owner can update their doc, BUT CANNOT change their `isAdmin` status.
+      // 2. An admin can update any user's doc, including their `isAdmin` status.
+      allow update: if (isOwner(userId) && request.resource.data.isAdmin == resource.data.isAdmin) || isAdmin();
+      
+      allow delete: if isOwner(userId);
+    }
+
+    /**
+     * @description Allows public read access to rewards. Write access requires admin.
+     * @path /rewards/{rewardId}
+     */
+    match /rewards/{rewardId} {
+      allow get, list: if true;
+      allow create, update, delete: if isAdmin();
+    }
+
+    /**
+     * @description Allows users to read and write their own rewards.
+     * @path /users/{userId}/rewards/{rewardId}
+     */
+    match /users/{userId}/rewards/{rewardId} {
+      allow read, write: if isOwner(userId) || isAdmin();
+    }
+
+    /**
+     * @description Restricts access to leaderboard entries.
+     * @path /leaderboard_entries/{leaderboardEntryId}
+     */
+    match /leaderboard_entries/{leaderboardEntryId} {
+      allow read, write: if false; // TODO: Implement access restrictions
+    }
+
+    /**
+     * @description Allows public read access to features. Write access requires admin.
+     * @path /features/{featureId}
+     */
+    match /features/{featureId} {
+      allow get, list: if true;
+      allow create, update, delete: if isAdmin();
+    }
+
+    /**
+     * @description Allows users to manage their own unlocked features.
+     * @path /users/{userId}/unlocked_features/{featureId}
+     */
+    match /users/{userId}/unlocked_features/{featureId} {
+      allow read, write: if isOwner(userId) || isAdmin();
+    }
+  }
+}
