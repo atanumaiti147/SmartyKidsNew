@@ -38,7 +38,7 @@ const nextConfig: NextConfig = {
     unoptimized: true
   },
   devIndicators: {
-    buildActivity: false,
+    buildActivity: true,
   }
 };
 
